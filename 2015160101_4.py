@@ -1,5 +1,6 @@
 #original auther : Ryoo Kwangrok_ kwangrok21@naver.com 2015160101 Dept. of Physics
-#last update _ 2017.06.06
+import os
+
 class Stack:
     def __init__(self):
         self.items = []
@@ -24,6 +25,8 @@ class RedBlackTree:
         self.root = self.nil
 #사용자정의변수
         self.noData = []
+        self.insertAmount = 0
+        self.deleteAmount = 0
         self.nodeAmount = 0
         self.bnodeAmount = 0
         self.Temp_bheight = 0
@@ -53,44 +56,42 @@ class RedBlackTree:
         self.insertFixup(self.root,n)
 
     def insertFixup(self,tree,n):
-        while n.p.color is "RED":
-            if n.p is n.p.p.left:
+        while n.p.color == "RED":
+            if n.p == n.p.p.left:
                 y = n.p.p.right
-                if y.color is "RED":
+                if y.color == "RED":
                     n.p.color = "BLACK"
                     y.color = "BLACK"
                     n.p.p.color = "RED"
                     n = n.p.p
+
+                elif n == n.p.right:
+                    n = n.p
+                    self.leftRotate(tree,n)
                 else:
-                    if n == n.p.right:
-                        n = n.p
-                        self.leftRotate(tree,n)
                     n.p.color = "BLACK"
                     n.p.p.color = "RED"
                     self.rightRotate(tree,n.p.p)
             else:
                 y = n.p.p.left
-                if y.color is "RED":
+                if y.color == "RED":
                     n.p.color = "BLACK"
                     y.color = "BLACK"
                     n.p.p.color = "RED"
                     n = n.p.p
+                elif n == n.p.left:
+                    n = n.p
+                    self.rightRotate(tree,n)
                 else:
-                    if n == n.p.left:
-                        n = n.p
-                        self.rightRotate(tree,n)
                     n.p.color = "BLACK"
                     n.p.p.color = "RED"
                     self.leftRotate(tree,n.p.p)
         self.root.color = "BLACK"
 
     def leftRotate(self,tree,x):
-        #print("렢렢렢",x.val)
-        #self.print(self.root,0)
-        #print("렢렢렢")
         y = x.right
         x.right = y.left
-        if y.left is not self.nil:
+        if y.left != self.nil:
             y.left.p = x
         y.p = x.p
         if x.p == self.nil:
@@ -103,12 +104,9 @@ class RedBlackTree:
         x.p = y
 
     def rightRotate(self,tree,y):
-        #print("뢋뢋뢋",y.val)
-        #self.print(self.root,0)
-        #print("뢋뢋뢋")
         x = y.left
         y.left = x.right
-        if x.right is not self.nil:
+        if x.right != self.nil:
             x.right.p = y
         x.p = y.p
         if y.p == self.nil:
@@ -121,42 +119,70 @@ class RedBlackTree:
         y.p = x
 
     def print(self,tree,level):
-        if tree.right is not self.nil:
+        if tree.right != self.nil:
             self.print(tree.right,level + 1)
         for i in range(level):
             print('   ', end='')
-        print(tree.val)
-        if tree.left is not self.nil:
+        print(tree.val,tree.color)
+        if tree.left != self.nil:
             self.print(tree.left, level + 1)
 
     def RBprint(self,tree,level):
-        if tree.right is not self.nil:
+        if tree.right != self.nil:
             self.RBprint(tree.right,level + 1)
         for i in range(level):
             print('   ', end='')
-        if tree.color is "RED":
+        if tree.color == "RED":
             print("R")
         else:
             print("B")
-        if tree.left is not self.nil:
+        if tree.left != self.nil:
             self.RBprint(tree.left, level + 1)
 
-
     def RBtransplant(self,tree,u,v):
-        if u.p is self.nil:
-            tree.root = v
-        elif u is u.p.left:
+        if u.p == self.nil:
+            self.root = v
+        elif u == u.p.left:
             u.p.left = v
         else:
             u.p.right = v
-        if v is not self.nil:
-            v.p = u.p
+        v.p = u.p
+    def RBdelete2(self,tree,z):
+        z = self.search(tree, z)
+        y = z
+        y_original_color=y.color
+        if z.left ==self.nil:
+            x=z.right
+            self.RBtransplant(tree,z,z.right)
+        elif z.right == self.nil:
+            x = z.left
+            self.RBtransplant(tree,z,z.right)
+        else:
+            y = self.minimum(x.right)
+            y_original_color = y.color
+            x=y.right
+            if y.p==z:
+                x.p=y
+            else:
+                self.RBtransplant(tree,y,y.right)
+                y.right = z.right
+                y.right.p=y
+            self.RBtransplant(tree,z,y)
+            y.left = z.left
+            y.left.p = y
+            y.color = z.color
+        if y_original_color == "BLACK":
+           self.RBdeleteFixup(tree,x)
+
 
     def RBdelete(self,tree,i):
-        z = self.search(tree,i)
+        z = self.search(self.root,i)
+        if z == self.root and z.left == self.nil and z.right == self.nil:
+            self.root = self.nil
         if z == self.nil:
             self.noData.append(i)
         else:#original source
+            self.deleteAmount+=1
             self.nodeAmount-=1
             y = z
             y_original_color = y.color
@@ -171,7 +197,7 @@ class RedBlackTree:
                 y_original_color = y.color
                 x = y.right
                 if y.p == z:
-                    x.p = z
+                    x.p = y
                 else:
                     self.RBtransplant(tree,y,y.right)
                     y.right = z.right
@@ -180,31 +206,34 @@ class RedBlackTree:
                 y.left = z.left
                 y.left.p = y
                 y.color = z.color
+                if z.p == self.nil:
+                    tree = y
             if y_original_color == "BLACK":
                 self.RBdeleteFixup(tree,x)
 
     def minimum(self,x):
-        while x.left is not self.nil:
+        while x.left != self.nil:
             x=x.left
         return x
 
     def RBdeleteFixup(self,tree,x):
-        while x is self.root and x.color is "BLACK":
-            if x is x.p.left:
+        while x != self.root and x.color == "BLACK":
+            if x == x.p.left:
                 w = x.p.right
-                if w.color is "RED":
-                    w.color is "BLACK"
+                if w.color == "RED":
+                    w.color = "BLACK"
                     x.p.color = "RED"
-                    self.leftRotate(tree,x,p)
+                    self.leftRotate(tree,x.p)
                     w = x.p.right
-                if w.left.color == "BLACK" and w.right.color is "BLACK":
+                if w.left.color == "BLACK" and w.right.color == "BLACK":
                     w.color = "RED"
                     x = x.p
-                elif w.right.color is "BLACK":
-                    w.left.color = "BLACK"
-                    w.color = "RED"
-                    self.rightRotate(tree,w)
-                    w = x.p.right
+                else:
+                    if w.right.color == "BLACK":
+                        w.left.color = "BLACK"
+                        w.color = "RED"
+                        self.rightRotate(tree,w)
+                        w = x.p.right
                     w.color = x.p.color
                     x.p.color = "BLACK"
                     w.right.color = "BLACK"
@@ -212,19 +241,20 @@ class RedBlackTree:
                     x = self.root
             else:
                 w = x.p.left
-                if w.color is "RED":
-                    w.color is "BLACK"
+                if w.color == "RED":#의문의 에러 지점_
+                    w.color = "BLACK"
                     x.p.color = "RED"
-                    self.rightRotate(tree,x,p)
+                    self.rightRotate(tree,x.p)
                     w = x.p.left
-                if w.right.color == "BLACK" and w.left.color is "BLACK":
+                if w.right.color == "BLACK" and w.left.color == "BLACK":
                     w.color = "RED"
                     x = x.p
-                elif w.left.color is "BLACK":
-                    w.right.color = "BLACK"
-                    w.color = "RED"
-                    self.leftRotate(tree,w)
-                    w = x.p.left
+                else:
+                    if w.left.color == "BLACK":
+                        w.right.color = "BLACK"
+                        w.color = "RED"
+                        self.leftRotate(tree,w)
+                        w = x.p.left
                     w.color = x.p.color
                     x.p.color = "BLACK"
                     w.left.color = "BLACK"
@@ -233,38 +263,31 @@ class RedBlackTree:
         x.color = "BLACK"
 
     def search(self,x,k):
-        if x is self.nil or k is x.val:
+        if x == self.nil:
+            return self.nil
+        elif k == x.val:
             return x
         if k < x.val:
             return self.search(x.left,k)
         else:
             return self.search(x.right,k)
 
-    def RBprint(self,tree,level):
-        if tree.right is not self.nil:
-            self.RBprint(tree.right,level + 1)
-        for i in range(level):
-            print('   ', end='')
-        if tree.color is "RED":
-            print("R")
-        else:
-            print("B")
-        if tree.left is not self.nil:
-            self.RBprint(tree.left, level + 1)
-
     def Input(self,val):
         if val > 0:#insert
             self.nodeAmount+=1
+            self.insertAmount+=1
             self.RBinsert(self.root, Node(val,"RED"))
+            #print("insert",val)
         elif val < 0:#delete
             self.RBdelete(self.root, -1 * val)
         else:#case of 0 exit the program
+            print("else?")
             pass
 
     def inorder(self,tree):
 
-        if tree is self.nil:
-            if tree.p is not None:
+        if tree == self.nil:
+            if tree.p != None:
                 if tree.p.color == "BLACK":#흑인 부모일경우
                     self.Temp_bheight-=1
             return
@@ -296,31 +319,19 @@ class RedBlackTree:
             #**************************
 
     def printInorder(self,tree):
-        if tree is self.nil:
+        if tree == self.nil:
             return
         else:
             self.printInorder(tree.left)
             print(tree.val)
             self.printInorder(tree.right)
 
-    def inorder_iter(self,tree):
-        stk = Stack()
-        while not stk.is_empty() or tree is not self.nil :
-            if tree is not self.nil:
-                stk.push(tree)
-                tree = tree.left
-            else:
-                tree = stk.pop()
-                print(tree.val, end = " ")
-                tree = tree.right
-
-
     def blackheight(self,tree):
-        if tree is self.nil:
+        if tree == self.nil:
             print("bh = 1")
         else:
             bnode = tree
-            while self.itertest is 1:
+            while self.itertest == 1:
                 if bnode.color == "BLACK":
                     self.bh+=1
                 if bnode.left == self.nil:
@@ -336,15 +347,20 @@ def main():
     lines = f.readlines()
     for line in lines:
         number=int(line)
-        if number is not 0:
+        if number != 0:
             rbt.Input(number)
+        else:
+            break
     f.close()
     #rbt.print(rbt.root,0)
     rbt.inorder(rbt.root)
+
     print("삭제되지 못한 입력 값 = ",rbt.noData)
     print("total = ",rbt.nodeAmount)
     print("nb = ",rbt.bnodeAmount)
     rbt.blackheight(rbt.root)
     rbt.printInorder(rbt.root)
     #rbt.inorder_iter(rbt.root)
-main()
+
+if __name__ == '__main__':
+    main()
